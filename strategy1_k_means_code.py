@@ -1,15 +1,32 @@
 # from Precode import *
 import numpy as np
+import random
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
 # data = np.load('AllSamples.npy')
 data = loadmat('project_allSamples.mat')['AllSamples']
-# k1,i_point1,k2,i_point2 = initial_S1('0233') # please replace 0111 with your last four digit of your ID
-# the given k and initial centroids for each set are below
-k1 = 3
-i_point1 = np.array([[ 7.78551305, 3.12724529], [ 3.72610844, 5.20432439], [3.2492998, 5.59125171]])
-k2 = 5
-i_point2 = np.array([[ 2.3537231, 6.29810755], [ 2.81629029, 3.1999725 ], [ 6.6161895, 0.66750633], [ 5.38398051, 3.53840433], [ 7.59731342, 1.16504743]])
+
+# functions to generate k values and their initial points
+def initial_point_idx(id, k,N):
+    return np.random.RandomState(seed=(id+k)).permutation(N)[:k]
+
+def init_point(data, idx):
+    return data[idx,:]
+
+def initial_S1(id):
+    print("Strategy 1: k and initial points")
+    i = int(id)%150 
+    random.seed(i+500)
+    k = [x for x in range(2, 11)]
+    k_points = []
+    
+    for num in range(len(k)):
+        init_idx = initial_point_idx(i,k[num],data.shape[0])
+        init_s1 = init_point(data, init_idx)
+        k_points.append(init_s1)
+    return k, k_points
+
+stg1_k_values, stg1_k_points = initial_S1('0233')
 
 # Assign the initial random centroids from the points
 class KMeans_stg1:
@@ -107,46 +124,22 @@ class KMeans_stg1:
 
         return [self.centroids, final_cost]
 
-print("K Means Strategy 1 Set 1")
-point1 = KMeans_stg1
-point1.setCoordinate(point1, data)
-point1.setK(point1, k1)
-print("k: ", point1.k)
-print("Initial points assigned: ", i_point1)
-point1.setCentroids(point1, i_point1)
-print(point1.centroids)
+# loss functions for strategy 1 to calculate the loss for each k
+def lossFunctionStg1(stg1_k_values, stg1_k_points):
+    loss = []
+    for i in range(len(stg1_k_values)):
+        kmeans = KMeans_stg1 
+        kmeans.setCoordinate(kmeans, data)
+        kmeans.setK(kmeans, stg1_k_values[i])
+        kmeans.setCentroids(kmeans, stg1_k_points[i])
+        print("k value: ", stg1_k_values[i])
+        final_centroids, total_cost = kmeans.repeatKMeansClustering(kmeans)
+        print("final centroids: ", final_centroids)
+        print("loss: ", total_cost)
+        loss.append(total_cost)
+    plt.scatter(stg1_k_values, loss)
+    plt.xlabel("k value")
+    plt.ylabel("Loss")
+    plt.show()
 
-point1_final_centroids = point1.repeatKMeansClustering(point1)[0]
-point1_total_cost = point1.repeatKMeansClustering(point1)[1]
-print("Final Centroids: ", point1_final_centroids)
-print("Total Cost: ", point1_total_cost)
-
-# Visiaulize the cluster using matplotlib
-# Green points are the first k centroids and lack points are the last k centroids
-point1_data = np.array(point1.coordinate)
-point1_centroids = np.array(point1.centroids)
-plt.scatter(point1_data[:,0],point1_data[:,1], c=point1.centroid_idx, cmap='rainbow')
-plt.scatter(point1_centroids[:,0] ,point1_centroids[:,1], color='black')
-plt.scatter(i_point1[:,0] ,i_point1[:,1], color='green')
-plt.show()
-
-print("K Means Strategy 1 Set 2")
-point2 = KMeans_stg1
-point2.setCoordinate(point2, data)
-point1.setK(point2, k2)
-print("k: ", point2.k)
-print("Initial points assigned: ", i_point2)
-point2.setCentroids(point2, i_point2)
-point2_final_centroids = point2.repeatKMeansClustering(point2)[0]
-point2_total_cost = point2.repeatKMeansClustering(point2)[1]
-print("Final Centroids: ", point2_final_centroids)
-print("Total Cost: ", point2_total_cost)
-
-# Visiaulize the cluster using matplotlib
-# Green points are the first k centroids and lack points are the last k centroids
-point2_data = np.array(point2.coordinate)
-point2_centroids = np.array(point2.centroids)
-plt.scatter(point2_data[:,0],point2_data[:,1], c=point2.centroid_idx, cmap='rainbow')
-plt.scatter(point2_centroids[:,0] ,point2_centroids[:,1], color='black')
-plt.scatter(i_point2[:,0] ,i_point2[:,1], color='green')
-plt.show()
+lossFunctionStg1(stg1_k_values, stg1_k_points)

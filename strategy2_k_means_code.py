@@ -1,15 +1,30 @@
 # from Precode2 import *
 import numpy as np
+import random
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
 # data = np.load('AllSamples.npy')
 data = loadmat('project_allSamples.mat')['AllSamples']
-# k1,i_point1,k2,i_point2 = initial_S1('0233') # please replace 0111 with your last four digit of your ID
-# the given k and initial centroids for each set are below
-k1 = 4
-i_point1 = np.array([6.12393256, 5.49223251])
-k2 = 6
-i_point2 = np.array([ 3.2115245, 1.1089788])
+
+# functions to generate k values and their initial points
+def initial_point_idx2(id,k, N):
+    random.seed((id+k))     
+    return random.randint(0,N-1)
+
+def initial_S2(id):
+    print("Strategy 2: k and initial points")
+    i = int(id)%150 
+    random.seed(i+800)
+    k = [x for x in range(2, 11)]
+    k_points = []
+    
+    for num in range(len(k)):
+        init_idx = initial_point_idx2(i, k[num],data.shape[0])
+        init_s2 = data[init_idx,:]
+        k_points.append(init_s2)
+    return k, k_points
+
+stg2_k_values, stg2_k_points = initial_S2('0233')
 
 # Assign the initial random centroids from the points
 class KMeans_stg2:
@@ -143,48 +158,24 @@ class KMeans_stg2:
 
         return [self.centroids, final_cost]
 
-print("K Means Strategy 2 Set 1")
-point1 = KMeans_stg2
-point1.setCoordinate(point1, data)
-point1.setK(point1, k1)
-print("k: ", point1.k)
-print("Initial point assigned: ", i_point1)
-initial_centroids1 = np.array(point1.findMaxDistCentroid(point1, k1, i_point1))
-print("Initial point assigned and other k-1 centroids: ", initial_centroids1)
-
-point1.setCentroids(point1, initial_centroids1)
-point1_final_centroids = point1.repeatKMeansClustering(point1)[0]
-point1_total_cost = point1.repeatKMeansClustering(point1)[1]
-print("Final Centroids: ", point1_final_centroids)
-print("Total Cost: ", point1_total_cost)
-
-# Visiaulize the cluster using matplotlib
-# Green points are the first k centroids and lack points are the last k centroids
-point1_data = np.array(point1.coordinate)
-point1_centroids = np.array(point1.centroids)
-plt.scatter(point1_data[:,0],point1_data[:,1], c=point1.centroid_idx, cmap='rainbow')
-plt.scatter(point1_centroids[:,0] ,point1_centroids[:,1], color='black')
-plt.scatter(initial_centroids1[:,0] ,initial_centroids1[:,1], color='green')
-plt.show()
-
-print("K Means Strategy 2 Set 2")
-point2 = KMeans_stg2
-point2.setCoordinate(point2, data)
-point1.setK(point2, k2)
-print("k: ", point2.k)
-print("Initial point assigned: ", i_point2)
-initial_centroids2 = np.array(point2.findMaxDistCentroid(point2, k2, i_point2))
-print("Initial point assigned and other k-1 centroids: ", initial_centroids2)
-
-point2.setCentroids(point1, initial_centroids2)
-point2_final_centroids = point2.repeatKMeansClustering(point2)[0]
-point2_total_cost = point2.repeatKMeansClustering(point2)[1]
-print("Final Centroids: ", point2_final_centroids)
-print("Total Cost: ", point2_total_cost)
-
-point2_data = np.array(point2.coordinate)
-point2_centroids = np.array(point2.centroids)
-plt.scatter(point2_data[:,0],point2_data[:,1], c=point2.centroid_idx, cmap='rainbow')
-plt.scatter(point2_centroids[:,0] ,point2_centroids[:,1], color='black')
-plt.scatter(initial_centroids2[:,0] ,initial_centroids2[:,1], color='green')
-plt.show()
+def lossFunctionStg2(stg2_k_values, stg2_k_points):
+    total_loss = []
+    total_final_centroids = []
+    for i in range(len(stg2_k_values)):
+        kmeans = KMeans_stg2 
+        kmeans.setCoordinate(kmeans, data)
+        kmeans.setK(kmeans, stg2_k_values[i])
+        initial_centroids = np.array(kmeans.findMaxDistCentroid(kmeans, stg2_k_values[i], stg2_k_points[i]))
+        kmeans.setCentroids(kmeans, initial_centroids)
+        print("k value: ", stg2_k_values[i])
+        final_centroids, loss = kmeans.repeatKMeansClustering(kmeans)
+        print("final centroids: ", kmeans.centroids)
+        total_final_centroids.append(final_centroids)
+        print("loss: ", loss)
+        total_loss.append(loss)
+    plt.scatter(stg2_k_values, total_loss)
+    plt.xlabel("k value")
+    plt.ylabel("Loss")
+    plt.show()
+    
+lossFunctionStg2(stg2_k_values, stg2_k_points)
